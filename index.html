@@ -1,0 +1,837 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Word Search Game</title>
+<style>
+  :root {
+    --blue: #1d5fb0;
+    --blue-dark: #123f7a;
+    --blue-mid: #3b78c9;
+    --blue-light: #eaf2fb;
+    --blue-lighter: #f4f9ff;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: #ffffff;
+    color: var(--blue-dark);
+    font-family: "Trebuchet MS", "Segoe UI", Verdana, Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 20px 12px 40px;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 1100px;
+    background: #ffffff;
+    border: 5px solid var(--blue);
+    border-radius: 18px;
+    box-shadow: 0 6px 18px rgba(29, 95, 176, 0.18);
+    padding: 20px 24px 28px;
+  }
+
+  h1 {
+    text-align: center;
+    color: var(--blue);
+    margin: 4px 0 18px;
+    font-size: 2rem;
+    letter-spacing: 1px;
+  }
+
+  h2 {
+    color: var(--blue);
+    margin: 0 0 6px;
+    text-align: center;
+  }
+
+  button {
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #ffffff;
+    background: var(--blue);
+    border: 2px solid var(--blue-dark);
+    border-radius: 10px;
+    padding: 10px 18px;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+
+  button:hover { background: var(--blue-mid); }
+  button:active { transform: scale(0.97); }
+
+  button.secondary {
+    background: #ffffff;
+    color: var(--blue);
+  }
+  button.secondary:hover { background: var(--blue-light); }
+
+  /* ---------- Menu ---------- */
+  #menu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    padding: 30px 10px 10px;
+  }
+  #menu p {
+    max-width: 480px;
+    text-align: center;
+    color: var(--blue-dark);
+  }
+  #menu .mode-buttons {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  #menu .mode-buttons button {
+    padding: 16px 28px;
+    font-size: 1.1rem;
+  }
+
+  /* ---------- Setup (name entry) ---------- */
+  #setup1p, #setup2p {
+    display: flex;
+    justify-content: center;
+    padding: 30px 10px 10px;
+  }
+  .setup-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    max-width: 320px;
+  }
+  .setup-box label {
+    align-self: flex-start;
+    font-weight: bold;
+    color: var(--blue);
+    margin-top: 4px;
+  }
+  .name-input {
+    width: 100%;
+    font-family: inherit;
+    font-size: 1rem;
+    padding: 10px 12px;
+    border: 2px solid var(--blue);
+    border-radius: 10px;
+    color: var(--blue-dark);
+    background: var(--blue-lighter);
+  }
+  .name-input:focus {
+    outline: none;
+    border-color: var(--blue-dark);
+    background: #ffffff;
+  }
+  .setup-box .mode-buttons { margin-top: 12px; }
+
+  /* ---------- Toolbar ---------- */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .toolbar .status {
+    font-weight: bold;
+    font-size: 1.15rem;
+    color: var(--blue);
+    background: var(--blue-light);
+    border: 2px solid var(--blue);
+    border-radius: 10px;
+    padding: 6px 16px;
+  }
+  .toolbar .buttons { display: flex; gap: 10px; }
+
+  /* ---------- Puzzle panel ---------- */
+  .panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    width: min(480px, 92vw);
+    aspect-ratio: 1 / 1;
+    background: var(--blue-lighter);
+    border: 4px solid var(--blue);
+    border-radius: 10px;
+    overflow: hidden;
+    user-select: none;
+    touch-action: none;
+  }
+
+  .cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: var(--blue-dark);
+    font-size: clamp(10px, 2.6vw, 18px);
+    cursor: pointer;
+    background: #ffffff;
+    border: 1px solid #dce8f7;
+  }
+  .cell:hover { background: var(--blue-light); }
+  .cell.selected { background: #bcd8f7; }
+  .cell.found { background: var(--blue); color: #ffffff; }
+  .cell.flash { background: #f7c8c8; }
+
+  .word-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    justify-content: center;
+    max-width: 480px;
+  }
+  .word-list .word {
+    padding: 4px 10px;
+    border: 2px solid var(--blue);
+    border-radius: 8px;
+    color: var(--blue-dark);
+    font-weight: bold;
+    background: var(--blue-lighter);
+    letter-spacing: 0.5px;
+  }
+  .word-list .word.found {
+    text-decoration: line-through;
+    background: var(--blue);
+    color: #ffffff;
+    border-color: var(--blue-dark);
+  }
+
+  .banner {
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--blue-dark);
+    background: var(--blue-light);
+    border: 2px solid var(--blue);
+    border-radius: 10px;
+    padding: 10px 16px;
+    max-width: 480px;
+  }
+
+  /* ---------- 2 Player split screen ---------- */
+  .split-wrap {
+    display: flex;
+    gap: 22px;
+    justify-content: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .split-wrap .panel {
+    flex: 1 1 380px;
+    max-width: 480px;
+    background: var(--blue-lighter);
+    border: 3px solid var(--blue);
+    border-radius: 14px;
+    padding: 14px;
+  }
+  .split-wrap .grid { width: 100%; }
+  .player-score {
+    font-weight: bold;
+    color: var(--blue);
+    font-size: 1.05rem;
+  }
+
+  [hidden] { display: none !important; }
+
+  footer {
+    text-align: center;
+    margin-top: 22px;
+    font-size: 0.8rem;
+    color: var(--blue-mid);
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>🔎 Word Search</h1>
+
+  <div id="menu">
+    <p>Find all 7 hidden words in the grid! Play solo against the clock, or race a friend
+      side-by-side in a 3-minute head-to-head.</p>
+    <div class="mode-buttons">
+      <button id="btn1p">1 Player</button>
+      <button id="btn2p">2 Player</button>
+    </div>
+  </div>
+
+  <div id="setup1p" hidden>
+    <div class="setup-box">
+      <h2>Enter Your Name</h2>
+      <input type="text" id="name1p" class="name-input" maxlength="20" placeholder="Player" autocomplete="off">
+      <div class="mode-buttons">
+        <button id="startBtn1p">Start Game</button>
+        <button class="secondary" id="backBtn1p">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="setup2p" hidden>
+    <div class="setup-box">
+      <h2>Enter Player Names</h2>
+      <label for="name2p-p1">Player 1</label>
+      <input type="text" id="name2p-p1" class="name-input" maxlength="20" placeholder="Player 1" autocomplete="off">
+      <label for="name2p-p2">Player 2</label>
+      <input type="text" id="name2p-p2" class="name-input" maxlength="20" placeholder="Player 2" autocomplete="off">
+      <div class="mode-buttons">
+        <button id="startBtn2p">Start Game</button>
+        <button class="secondary" id="backBtn2p">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="game1p" hidden>
+    <div class="toolbar">
+      <div class="status" id="nameBadge1p">Player</div>
+      <div class="status" id="stopwatch">Time: 00:00</div>
+      <div class="buttons">
+        <button class="secondary" id="new1p">New Game</button>
+        <button class="secondary" id="menu1p">Back to Menu</button>
+      </div>
+    </div>
+    <div class="banner" id="banner1p" hidden></div>
+    <div class="panel">
+      <div class="grid" id="grid1p"></div>
+      <div class="word-list" id="words1p"></div>
+    </div>
+  </div>
+
+  <div id="game2p" hidden>
+    <div class="toolbar">
+      <div class="status" id="countdown">Time Left: 03:00</div>
+      <div class="buttons">
+        <button class="secondary" id="new2p">New Game</button>
+        <button class="secondary" id="menu2p">Back to Menu</button>
+      </div>
+    </div>
+    <div class="banner" id="banner2p" hidden></div>
+    <div class="split-wrap">
+      <div class="panel">
+        <h2 id="heading-p1">Player 1</h2>
+        <div class="player-score" id="score-p1">Found: 0 / 7</div>
+        <div class="grid" id="grid-p1"></div>
+        <div class="word-list" id="words-p1"></div>
+      </div>
+      <div class="panel">
+        <h2 id="heading-p2">Player 2</h2>
+        <div class="player-score" id="score-p2">Found: 0 / 7</div>
+        <div class="grid" id="grid-p2"></div>
+        <div class="word-list" id="words-p2"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>lowercase letters &middot; 12 &times; 12 grid &middot; horizontal, vertical &amp; diagonal words</footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var SIZE = 12;
+  var WORD_BANK = [
+    "cat", "dog", "sun", "book", "tree", "fish", "star", "apple", "house",
+    "water", "happy", "school", "pencil", "orange", "purple", "yellow",
+    "garden", "friend", "animal", "planet", "rabbit", "turtle", "guitar",
+    "rainbow", "flower", "mountain", "bicycle", "computer", "teacher",
+    "backpack", "dinosaur", "elephant", "butterfly"
+  ];
+
+  var DIRECTIONS = [
+    [0, 1],   // horizontal ->
+    [1, 0],   // vertical v
+    [1, 1],   // diagonal down-right
+    [1, -1]   // diagonal down-left
+  ];
+
+  // ---------- Puzzle generation ----------
+
+  function shuffle(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+    }
+    return a;
+  }
+
+  function pickWords(n) {
+    return shuffle(WORD_BANK).slice(0, n).sort(function (a, b) {
+      return b.length - a.length;
+    });
+  }
+
+  function randomLetter() {
+    return String.fromCharCode(97 + Math.floor(Math.random() * 26));
+  }
+
+  function emptyGrid(size) {
+    var g = [];
+    for (var r = 0; r < size; r++) {
+      g.push(new Array(size).fill(null));
+    }
+    return g;
+  }
+
+  function tryPlaceWord(grid, size, word) {
+    var attemptsMax = 250;
+    for (var a = 0; a < attemptsMax; a++) {
+      var dir = DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)];
+      var dr = dir[0], dc = dir[1];
+      var len = word.length;
+      var rMin = 0, rMax = (dr === 1) ? size - len : size - 1;
+      var cMin, cMax;
+      if (dc === 1) { cMin = 0; cMax = size - len; }
+      else if (dc === -1) { cMin = len - 1; cMax = size - 1; }
+      else { cMin = 0; cMax = size - 1; }
+      if (rMax < rMin || cMax < cMin) continue;
+
+      var row = rMin + Math.floor(Math.random() * (rMax - rMin + 1));
+      var col = cMin + Math.floor(Math.random() * (cMax - cMin + 1));
+
+      var ok = true;
+      var cells = [];
+      for (var i = 0; i < len; i++) {
+        var r = row + dr * i, c = col + dc * i;
+        var existing = grid[r][c];
+        if (existing !== null && existing !== word[i]) { ok = false; break; }
+        cells.push([r, c]);
+      }
+      if (ok) {
+        for (var k = 0; k < len; k++) {
+          grid[cells[k][0]][cells[k][1]] = word[k];
+        }
+        return cells;
+      }
+    }
+    return null;
+  }
+
+  function generateGrid(words, size) {
+    for (var attempt = 0; attempt < 100; attempt++) {
+      var grid = emptyGrid(size);
+      var placements = [];
+      var success = true;
+      for (var i = 0; i < words.length; i++) {
+        var cells = tryPlaceWord(grid, size, words[i]);
+        if (!cells) { success = false; break; }
+        placements.push({ word: words[i], cells: cells });
+      }
+      if (success) {
+        for (var r = 0; r < size; r++) {
+          for (var c = 0; c < size; c++) {
+            if (grid[r][c] === null) grid[r][c] = randomLetter();
+          }
+        }
+        return { grid: grid, placements: placements };
+      }
+    }
+    throw new Error("Could not generate puzzle, please retry.");
+  }
+
+  function newPuzzle() {
+    var words = pickWords(7);
+    return generateGrid(words, SIZE);
+  }
+
+  // ---------- Selection helpers ----------
+
+  function cellsEqual(a, b) {
+    if (a.length !== b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i][0] !== b[i][0] || a[i][1] !== b[i][1]) return false;
+    }
+    return true;
+  }
+
+  function pathBetween(r1, c1, r2, c2) {
+    var dR = r2 - r1, dC = c2 - c1;
+    if (dR === 0 && dC === 0) return null;
+    var isStraight = (dR === 0) || (dC === 0) || (Math.abs(dR) === Math.abs(dC));
+    if (!isStraight) return null;
+    var steps = Math.max(Math.abs(dR), Math.abs(dC));
+    var dr = dR === 0 ? 0 : dR / Math.abs(dR);
+    var dc = dC === 0 ? 0 : dC / Math.abs(dC);
+    var path = [];
+    for (var i = 0; i <= steps; i++) {
+      path.push([r1 + dr * i, c1 + dc * i]);
+    }
+    return path;
+  }
+
+  function fmtTime(totalSeconds) {
+    var m = Math.floor(totalSeconds / 60);
+    var s = totalSeconds % 60;
+    return (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s;
+  }
+
+  // ---------- Puzzle instance (renders one grid + word list) ----------
+
+  function createPuzzleInstance(gridEl, wordListEl, puzzle, callbacks) {
+    var found = Object.create(null);
+    var selStart = null;
+    var cellEls = [];
+
+    gridEl.innerHTML = "";
+    wordListEl.innerHTML = "";
+
+    for (var r = 0; r < SIZE; r++) {
+      cellEls.push([]);
+      for (var c = 0; c < SIZE; c++) {
+        var div = document.createElement("div");
+        div.className = "cell";
+        div.textContent = puzzle.grid[r][c];
+        div.dataset.r = r;
+        div.dataset.c = c;
+        div.addEventListener("click", onCellClick);
+        gridEl.appendChild(div);
+        cellEls[r].push(div);
+      }
+    }
+
+    var wordEls = {};
+    puzzle.placements.forEach(function (p) {
+      var span = document.createElement("span");
+      span.className = "word";
+      span.textContent = p.word;
+      wordListEl.appendChild(span);
+      wordEls[p.word] = span;
+    });
+
+    function clearSelectionHighlight() {
+      if (!selStart) return;
+      var el = cellEls[selStart[0]][selStart[1]];
+      if (el.classList.contains("selected")) el.classList.remove("selected");
+      selStart = null;
+    }
+
+    function flashInvalid(cells) {
+      cells.forEach(function (cell) {
+        var el = cellEls[cell[0]][cell[1]];
+        el.classList.add("flash");
+      });
+      setTimeout(function () {
+        cells.forEach(function (cell) {
+          var el = cellEls[cell[0]][cell[1]];
+          el.classList.remove("flash");
+        });
+      }, 300);
+    }
+
+    function onCellClick(e) {
+      if (callbacks.isLocked && callbacks.isLocked()) return;
+      var r = parseInt(e.currentTarget.dataset.r, 10);
+      var c = parseInt(e.currentTarget.dataset.c, 10);
+
+      if (!selStart) {
+        selStart = [r, c];
+        cellEls[r][c].classList.add("selected");
+        return;
+      }
+
+      if (selStart[0] === r && selStart[1] === c) {
+        clearSelectionHighlight();
+        return;
+      }
+
+      var path = pathBetween(selStart[0], selStart[1], r, c);
+      var startCell = selStart;
+      clearSelectionHighlight();
+
+      if (!path) {
+        flashInvalid([startCell, [r, c]]);
+        return;
+      }
+
+      var match = null;
+      for (var i = 0; i < puzzle.placements.length; i++) {
+        var p = puzzle.placements[i];
+        if (found[p.word]) continue;
+        if (cellsEqual(path, p.cells) || cellsEqual(path, p.cells.slice().reverse())) {
+          match = p;
+          break;
+        }
+      }
+
+      if (match) {
+        found[match.word] = true;
+        match.cells.forEach(function (cell) {
+          cellEls[cell[0]][cell[1]].classList.add("found");
+        });
+        wordEls[match.word].classList.add("found");
+        var foundCount = Object.keys(found).length;
+        if (callbacks.onFound) callbacks.onFound(foundCount, match.word);
+        if (foundCount === puzzle.placements.length && callbacks.onComplete) {
+          callbacks.onComplete();
+        }
+      } else {
+        flashInvalid(path);
+      }
+    }
+
+    return {
+      foundCount: function () { return Object.keys(found).length; }
+    };
+  }
+
+  // ---------- Navigation ----------
+
+  var screens = {
+    menu: document.getElementById("menu"),
+    setup1p: document.getElementById("setup1p"),
+    setup2p: document.getElementById("setup2p"),
+    p1: document.getElementById("game1p"),
+    p2: document.getElementById("game2p")
+  };
+
+  function showScreen(name) {
+    Object.keys(screens).forEach(function (key) {
+      screens[key].hidden = key !== name;
+    });
+  }
+
+  // ---------- Name entry ----------
+
+  var playerName1p = "Player";
+  var playerName2pA = "Player 1";
+  var playerName2pB = "Player 2";
+
+  var name1pInput = document.getElementById("name1p");
+  var name2pInputA = document.getElementById("name2p-p1");
+  var name2pInputB = document.getElementById("name2p-p2");
+
+  document.getElementById("btn1p").addEventListener("click", function () {
+    showScreen("setup1p");
+    name1pInput.value = "";
+    name1pInput.focus();
+  });
+  document.getElementById("backBtn1p").addEventListener("click", function () {
+    showScreen("menu");
+  });
+  document.getElementById("startBtn1p").addEventListener("click", function () {
+    playerName1p = name1pInput.value.trim() || "Player";
+    showScreen("p1");
+    start1p();
+  });
+  name1pInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") document.getElementById("startBtn1p").click();
+  });
+
+  document.getElementById("btn2p").addEventListener("click", function () {
+    showScreen("setup2p");
+    name2pInputA.value = "";
+    name2pInputB.value = "";
+    name2pInputA.focus();
+  });
+  document.getElementById("backBtn2p").addEventListener("click", function () {
+    showScreen("menu");
+  });
+  document.getElementById("startBtn2p").addEventListener("click", function () {
+    playerName2pA = name2pInputA.value.trim() || "Player 1";
+    playerName2pB = name2pInputB.value.trim() || "Player 2";
+    showScreen("p2");
+    start2p();
+  });
+  name2pInputA.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") name2pInputB.focus();
+  });
+  name2pInputB.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") document.getElementById("startBtn2p").click();
+  });
+
+  // ---------- 1 Player mode ----------
+
+  var timer1pId = null;
+  var elapsed1p = 0;
+  var locked1p = false;
+
+  var currentPuzzle1p = null;
+
+  function start1p() {
+    clearInterval(timer1pId);
+    elapsed1p = 0;
+    locked1p = false;
+    document.getElementById("nameBadge1p").textContent = playerName1p;
+    document.getElementById("stopwatch").textContent = "Time: 00:00";
+    document.getElementById("banner1p").hidden = true;
+
+    var puzzle = newPuzzle();
+    currentPuzzle1p = puzzle;
+    createPuzzleInstance(
+      document.getElementById("grid1p"),
+      document.getElementById("words1p"),
+      puzzle,
+      {
+        isLocked: function () { return locked1p; },
+        onComplete: function () {
+          locked1p = true;
+          clearInterval(timer1pId);
+          var banner = document.getElementById("banner1p");
+          banner.textContent = "🎉 " + playerName1p + " found all 7 words in " + fmtTime(elapsed1p) + "!";
+          banner.hidden = false;
+        }
+      }
+    );
+
+    timer1pId = setInterval(function () {
+      elapsed1p++;
+      document.getElementById("stopwatch").textContent = "Time: " + fmtTime(elapsed1p);
+    }, 1000);
+  }
+
+  document.getElementById("new1p").addEventListener("click", start1p);
+  document.getElementById("menu1p").addEventListener("click", function () {
+    clearInterval(timer1pId);
+    showScreen("menu");
+  });
+
+  // ---------- 2 Player mode ----------
+
+  var timer2pId = null;
+  var timeLeft2p = 180;
+  var locked2p = false;
+  var instP1 = null, instP2 = null;
+  var currentPuzzleP1 = null, currentPuzzleP2 = null;
+
+  function endGame2p(reason) {
+    if (locked2p) return;
+    locked2p = true;
+    clearInterval(timer2pId);
+    var c1 = instP1.foundCount(), c2 = instP2.foundCount();
+    var msg;
+    if (c1 === c2) {
+      msg = "It's a tie! Both players found " + c1 + " of 7 words.";
+    } else if (c1 > c2) {
+      msg = "🏆 " + playerName2pA + " wins! (" + c1 + " vs " + c2 + " words found)";
+    } else {
+      msg = "🏆 " + playerName2pB + " wins! (" + c2 + " vs " + c1 + " words found)";
+    }
+    if (reason) msg = reason + " " + msg;
+    var banner = document.getElementById("banner2p");
+    banner.textContent = msg;
+    banner.hidden = false;
+  }
+
+  function start2p() {
+    clearInterval(timer2pId);
+    timeLeft2p = 180;
+    locked2p = false;
+    document.getElementById("countdown").textContent = "Time Left: " + fmtTime(timeLeft2p);
+    document.getElementById("banner2p").hidden = true;
+    document.getElementById("heading-p1").textContent = playerName2pA;
+    document.getElementById("heading-p2").textContent = playerName2pB;
+    document.getElementById("score-p1").textContent = "Found: 0 / 7";
+    document.getElementById("score-p2").textContent = "Found: 0 / 7";
+
+    // Same 7 words for both players, but each grid is generated independently
+    // so the words land in different spots/directions on each side.
+    var words = pickWords(7);
+    var puzzleP1 = generateGrid(words, SIZE);
+    var puzzleP2 = generateGrid(words, SIZE);
+    currentPuzzleP1 = puzzleP1;
+    currentPuzzleP2 = puzzleP2;
+
+    instP1 = createPuzzleInstance(
+      document.getElementById("grid-p1"),
+      document.getElementById("words-p1"),
+      puzzleP1,
+      {
+        isLocked: function () { return locked2p; },
+        onFound: function (count) {
+          document.getElementById("score-p1").textContent = "Found: " + count + " / 7";
+        },
+        onComplete: function () {
+          endGame2p(playerName2pA + " found all 7 words first!");
+        }
+      }
+    );
+
+    instP2 = createPuzzleInstance(
+      document.getElementById("grid-p2"),
+      document.getElementById("words-p2"),
+      puzzleP2,
+      {
+        isLocked: function () { return locked2p; },
+        onFound: function (count) {
+          document.getElementById("score-p2").textContent = "Found: " + count + " / 7";
+        },
+        onComplete: function () {
+          endGame2p(playerName2pB + " found all 7 words first!");
+        }
+      }
+    );
+
+    timer2pId = setInterval(function () {
+      timeLeft2p--;
+      document.getElementById("countdown").textContent = "Time Left: " + fmtTime(Math.max(timeLeft2p, 0));
+      if (timeLeft2p <= 0) {
+        endGame2p("Time's up!");
+      }
+    }, 1000);
+  }
+
+  document.getElementById("new2p").addEventListener("click", start2p);
+  document.getElementById("menu2p").addEventListener("click", function () {
+    clearInterval(timer2pId);
+    showScreen("menu");
+  });
+
+  showScreen("menu");
+
+  // ---------- Test hook ----------
+  // Exposes internals for the automated tests in /tests. Has no effect in a
+  // browser (module is undefined there), so the game itself is unaffected.
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = {
+      SIZE: SIZE,
+      WORD_BANK: WORD_BANK,
+      DIRECTIONS: DIRECTIONS,
+      pickWords: pickWords,
+      generateGrid: generateGrid,
+      newPuzzle: newPuzzle,
+      cellsEqual: cellsEqual,
+      pathBetween: pathBetween,
+      fmtTime: fmtTime,
+      createPuzzleInstance: createPuzzleInstance,
+      showScreen: showScreen,
+      screens: screens,
+      start1p: start1p,
+      start2p: start2p,
+      getState: function () {
+        return {
+          playerName1p: playerName1p,
+          playerName2pA: playerName2pA,
+          playerName2pB: playerName2pB,
+          elapsed1p: elapsed1p,
+          timeLeft2p: timeLeft2p,
+          locked1p: locked1p,
+          locked2p: locked2p,
+          instP1: instP1,
+          instP2: instP2,
+          currentPuzzle1p: currentPuzzle1p,
+          currentPuzzleP1: currentPuzzleP1,
+          currentPuzzleP2: currentPuzzleP2
+        };
+      }
+    };
+  }
+})();
+</script>
+</body>
+</html>
