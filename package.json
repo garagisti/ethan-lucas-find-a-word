@@ -4,6 +4,6 @@
   "private": true,
   "description": "A single-file, browser-based word search game for school-age kids (1 player and 2 player modes).",
   "scripts": {
-    "test": "node --test \"tests/**/*.test.js\""
+    "test": "node --test"
   }
 }
