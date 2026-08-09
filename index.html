@@ -190,6 +190,29 @@
   .cell.found { background: var(--blue); color: #ffffff; }
   .cell.flash { background: #f7c8c8; }
 
+  /* Brief "you found it!" celebration - plays once, well under half a
+     second, then the cell/word settles back into its normal .found look. */
+  @keyframes cellPop {
+    0%   { transform: scale(1) rotate(0deg); }
+    35%  { transform: scale(1.35) rotate(-6deg); background: #ffe066; color: #123f7a; box-shadow: 0 0 12px 4px #ffd23f; }
+    70%  { transform: scale(0.95) rotate(4deg); }
+    100% { transform: scale(1) rotate(0deg); }
+  }
+  .cell.celebrate {
+    position: relative;
+    z-index: 2;
+    animation: cellPop 0.4s ease;
+  }
+
+  @keyframes wordPop {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.2); background: #ffe066; color: #123f7a; border-color: #ffd23f; }
+    100% { transform: scale(1); }
+  }
+  .word-list .word.celebrate {
+    animation: wordPop 0.35s ease;
+  }
+
   .word-list {
     display: flex;
     flex-wrap: wrap;
@@ -481,6 +504,11 @@
     return (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s;
   }
 
+  // How long the "you found it!" celebration animation runs for, in ms.
+  // Keep this under 500 and in sync with the .celebrate animation-duration
+  // declared in <style> (cellPop/wordPop above).
+  var CELEBRATE_MS = 400;
+
   // ---------- Puzzle instance (renders one grid + word list) ----------
 
   function createPuzzleInstance(gridEl, wordListEl, puzzle, callbacks) {
@@ -534,6 +562,19 @@
       }, 300);
     }
 
+    function celebrateFind(cells, wordEl) {
+      cells.forEach(function (cell) {
+        cellEls[cell[0]][cell[1]].classList.add("celebrate");
+      });
+      wordEl.classList.add("celebrate");
+      setTimeout(function () {
+        cells.forEach(function (cell) {
+          cellEls[cell[0]][cell[1]].classList.remove("celebrate");
+        });
+        wordEl.classList.remove("celebrate");
+      }, CELEBRATE_MS);
+    }
+
     function onCellClick(e) {
       if (callbacks.isLocked && callbacks.isLocked()) return;
       var r = parseInt(e.currentTarget.dataset.r, 10);
@@ -575,6 +616,7 @@
           cellEls[cell[0]][cell[1]].classList.add("found");
         });
         wordEls[match.word].classList.add("found");
+        celebrateFind(match.cells, wordEls[match.word]);
         var foundCount = Object.keys(found).length;
         if (callbacks.onFound) callbacks.onFound(foundCount, match.word);
         if (foundCount === puzzle.placements.length && callbacks.onComplete) {
@@ -808,6 +850,7 @@
       cellsEqual: cellsEqual,
       pathBetween: pathBetween,
       fmtTime: fmtTime,
+      CELEBRATE_MS: CELEBRATE_MS,
       createPuzzleInstance: createPuzzleInstance,
       showScreen: showScreen,
       screens: screens,
