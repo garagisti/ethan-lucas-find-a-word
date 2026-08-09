@@ -1,0 +1,25 @@
+name: Tests
+
+# Runs the test suite on every pull request into main (and lets it be
+# triggered manually). This check is set as "required" in the main branch's
+# protection rules, so GitHub blocks merging any PR until it passes.
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Run test suite
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run tests
+        run: npm test
