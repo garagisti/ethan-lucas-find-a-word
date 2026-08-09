@@ -33,19 +33,21 @@ function extractInlineScript(html) {
 function makeFakeTimers() {
   var jobs = new Map();
   var nextId = 1;
+  var timeoutDelays = [];
 
-  function schedule(fn, repeat) {
+  function schedule(fn, repeat, delay) {
     var id = nextId++;
-    jobs.set(id, { fn: fn, repeat: repeat });
+    jobs.set(id, { fn: fn, repeat: repeat, delay: delay });
     return id;
   }
 
   return {
-    setInterval: function (fn) {
-      return schedule(fn, true);
+    setInterval: function (fn, ms) {
+      return schedule(fn, true, ms);
     },
-    setTimeout: function (fn) {
-      return schedule(fn, false);
+    setTimeout: function (fn, ms) {
+      timeoutDelays.push(ms);
+      return schedule(fn, false, ms);
     },
     clearInterval: function (id) {
       jobs.delete(id);
@@ -65,7 +67,11 @@ function makeFakeTimers() {
     },
     pendingCount: function () {
       return jobs.size;
-    }
+    },
+    // Every delay (in ms) ever passed to setTimeout, in call order. Useful
+    // for asserting a one-off effect (like a short animation cleanup) was
+    // scheduled for a specific, short duration.
+    timeoutDelays: timeoutDelays
   };
 }
 
